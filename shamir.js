@@ -34,13 +34,13 @@ const helpers = {
       let binaryString = '';
 
       for (let i = hexString.length - 1; i >= 0; i--) {
-        let num = parseInt(hexString[i], 16);
+        let num = parseInt(hexString[i], 16);   //converts hex to decimal paseInt(hex valuue,16(hex))
 
         if (isNaN(num)) {
           throw new Error('Invalid hex character.');
         }
 
-        binaryString = helpers.strings.padLeft(num.toString(2), 4) + binaryString;
+        binaryString = helpers.strings.padLeft(num.toString(2), 4) + binaryString; //converts decimal to binary num.toString(num,2(binary))
       }
       return binaryString;
     },
@@ -111,13 +111,12 @@ const helpers = {
       if (padLength) {
         stringToSplit = helpers.strings.padLeft(stringToSplit, padLength);
       }
-
+      // console.log("fieldBits",fieldBits);
       for (i = stringToSplit.length; i > fieldBits; i -= fieldBits) {
-        parts.push(parseInt(stringToSplit.slice(i - fieldBits, i), 2));
+        parts.push(parseInt(stringToSplit.slice(i - fieldBits, i), 2));  //8 bit per number. Slices every 8 bit,converts it into decimal and pushes it to parts array
+        // console.log("parts",parts);
       }
-
-      parts.push(parseInt(stringToSplit.slice(0, i), 2));
-
+      parts.push(parseInt(stringToSplit.slice(0, i), 2)); //
       return parts;
     }
   },
@@ -164,20 +163,25 @@ const helpers = {
      * @returns {Object[]} Array of objects which are X and Y coordinates
      */
     calculateRandomizedShares: function (secret, totalShares, requiredShares) {
+      // console.log("secret",secret);
       let shares = [];
       let coefficients = [secret];
 
       // Pick random coefficients for our polynomial function
       for (let i = 1; i < requiredShares; i++) {
-        coefficients[i] = parseInt(helpers.crypto.getRandomBinaryString(fieldBits), 2);
+        coefficients[i] = parseInt(helpers.crypto.getRandomBinaryString(fieldBits), 2);  //generate ranodm numbers between 0-255 and store it in thr coefficients[]
+        // console.log("coefficients[i]",coefficients[i]);
       }
 
       // Calculate the y value of each share based on f(x) when using our new random polynomial function
+      // console.log("i,coefficients",coefficients);
       for (let i = 1, len = totalShares + 1; i < len; i++) {
+        // console.log("i,coefficients",coefficients);
         shares[i - 1] = {
           x: i,
           y: helpers.crypto.calculateFofX(i, coefficients)
         };
+        // console.log("shares[i - 1]",shares[i - 1]);
       }
 
       return shares;
@@ -190,8 +194,10 @@ const helpers = {
      * @param coefficients
      * @returns {number}
      */
-    calculateFofX: function(x, coefficients) {
+    calculateFofX: function(x, coefficients) {  //doubtfull
+      // console.log("coefficient",coefficients);
       const logX = calculatedLogarithms[x];
+      // console.log("logX",logX);
       let fx = 0;
 
       for (let i = coefficients.length - 1; i >= 0; i--) {
@@ -202,6 +208,7 @@ const helpers = {
           // in an incorrect answer
           fx = coefficients[i];
         }
+        // console.log("fx",fx);
       }
 
       return fx;
@@ -295,10 +302,13 @@ let Shamir = {
     let neededBits;
     let subShares;
     let x = new Array(totalShares);
+    // console.log("x",x);
     let y = new Array(totalShares);
+    // console.log("y",y);
 
     // To increase the security of smaller secrets we pad all data by 128 bits by default.
     padLength = padLength || 128;
+    // console.log("padLength",padLength);
 
     // Do some sanity checks to make sure that we can actually generate a valid output
 
@@ -334,19 +344,33 @@ let Shamir = {
 
     // Convert the secret string into a binary string, then prepend a 1 as a marker so that later we can determine where the zero padding
     // ends and the secret begins
+    // console.log("secret",secret);
+    // console.log("helpers.strings.hexadecimalToBinary(secret)",helpers.strings.hexadecimalToBinary(secret));
     secret = '1' + helpers.strings.hexadecimalToBinary(secret);
+      // console.log("-----------------------------");
+      // console.log("secret1",secret);
 
     // Convert binary string into an array of integers
     secret = helpers.strings.splitNumStringToIntArray(secret, padLength);
+      // console.log("secret2",secret);
 
     // For each character in the secret integer array, generate `totalShares` sub-shares, concatenating each sub-share `j` to create a total
     // of `totalShares` outputs
+    // console.log("x[j],y[j]",x,y);
     for (let i = 0; i < secret.length; i++) {
       subShares = helpers.shareOperations.calculateRandomizedShares(secret[i], totalShares, requiredShares);
+      // console.log("subshares",subShares);
       for (let j = 0; j < totalShares; j++) {
         x[j] = x[j] || subShares[j].x.toString(16);
+        
+        // console.log("x[j]",x[j]);
+        // console.log("subShares[j]",subShares[j].y.toString(2));
         y[j] = helpers.strings.padLeft(subShares[j].y.toString(2)) + (y[j] || '');
+        // console.log("x[j],y[j]",x[j],y[j]);
+        // console.log("subShares[j].y.toString(2)",subShares[j].y.toString(2));
+        console.log("y[j]",y[j]);
       }
+    
     }
 
     // Creates the final share strings which contain the share's id and the data allocated to the share
